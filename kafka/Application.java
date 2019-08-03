@@ -65,33 +65,28 @@ public class A4Application {
 		KStream<String, Room> roomCapacityStream = classCapacity
 			.toStream()
 			.leftJoin(studentOccupancy, (occupants, capacity) -> new Room(capacity, occupants));
-		KStream<String, Room> updateStream = roomOccupancyStream.merge(roomCapacityStream);
+		KStream<String, Room> updateStream = roomOccupancyStream
+			.merge(roomCapacityStream);
 
-		// find overflow rooms
+		// find overflow rooms & remove duplicates
 		KTable<String, Long> overflowStream = updateStream
-			.mapValues((room) -> room.occupancy - room.capacity)
+			.map((k,room) -> KeyValue.pair(k, room.occupancy - room.capacity))
 			.groupByKey(Serialized.with(stringSerde, longSerde))
 			.reduce((k, v) -> v);
 
 		// calculate output
 		KStream<String, String> output = updateStream
 			.join(overflowStream, (room, diff) -> {
-				System.out.println(diff);
-				System.out.println(room.occupancy - room.capacity);
-				room.setPrevDiff(diff);
-				return room;
+					room.setPrevDiff(diff);
+					return room;
 				})
-			.filter((roomID, room) -> {
-				
-				
-				return room.occupancy > room.capacity || room.prevDiff > 0;
-				})
+			.filter((roomID, room) -> room.occupancy > room.capacity || room.prevDiff > 0)
 			.map((roomID, room) -> {
-				Long diff = room.occupancy - room.capacity;
-				String val = diff == 0 ? "OK" : String.valueOf(room.occupancy);
+				String val = room.occupancy > room.capacity ? String.valueOf(room.occupancy): "OK";
 				return KeyValue.pair(roomID, val);
 			});
 
+		// sent to output stream
 		output.to(outputTopic, Produced.with(stringSerde, stringSerde));
 
 		KafkaStreams streams = new KafkaStreams(builder.build(), props);
@@ -116,16 +111,6 @@ public class A4Application {
 
 		public void setPrevDiff(Long diff){
 			this.prevDiff = diff;
-		}
-	}
-
-	static class NextRoom {
-		public Room room;
-		public Long overflow;
-
-		public NextRoom(Room room, Long overflow){
-			this.room = room;
-			this.overflow = overflow;
 		}
 	}
 }

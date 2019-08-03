@@ -1,16 +1,12 @@
 #!/bin/bash
 
-#
-# Wojciech Golab, 2017
-#
-
 source ./settings.sh
 
 echo --- Cleaning
-rm -f A4*.class
+rm -f Application.class
 
 echo --- Compiling Java
-$JAVA_CC A4*.java
+$JAVA_CC Application.java
 if [ $? -eq 0 ]
 then
   echo "Success..."
@@ -21,4 +17,4 @@ fi
 
 echo --- Running
 
-$JAVA A4Application $KBROKERS $APP_NAME $STOPIC $CTOPIC $OTOPIC $STATE_STORE_DIR
+$JAVA Application $KBROKERS $APP_NAME $STOPIC $CTOPIC $OTOPIC $STATE_STORE_DIR

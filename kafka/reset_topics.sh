@@ -1,9 +1,5 @@
 #!/bin/bash
 
-#
-# Wojciech Golab, 2017
-#
-
 source ./settings.sh
 
 echo --- Resetting topics
